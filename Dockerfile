@@ -15,7 +15,7 @@ RUN echo "deb http://ftp.de.debian.org/debian/ testing main" >> /etc/apt/sources
     libjpeg62-turbo-dev \
     libpng-dev \
     libfreetype6-dev \
-    ssmtp \
+    msmtp \
  && apt-get clean \
  && rm -r /var/lib/apt/lists/* \
  && a2enmod expires headers
