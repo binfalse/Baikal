@@ -1,4 +1,5 @@
 <?php
+
 #################################################################
 #  Copyright notice
 #
@@ -24,25 +25,36 @@
 #  This copyright notice MUST APPEAR in all copies of the script!
 #################################################################
 
-
 namespace BaikalAdmin\Controller\Install;
 
-class UpgradeConfirmation extends \Flake\Core\Controller {
+use Symfony\Component\Yaml\Yaml;
 
+class UpgradeConfirmation extends \Flake\Core\Controller {
     function execute() {
     }
 
     function render() {
         $oView = new \BaikalAdmin\View\Install\UpgradeConfirmation();
 
-        if (BAIKAL_CONFIGURED_VERSION === BAIKAL_VERSION) {
-            $sMessage = "Your system is configured to use version <strong>" . BAIKAL_CONFIGURED_VERSION . "</strong>.<br />There's no upgrade to be done.";
+        try {
+            $config = Yaml::parseFile(PROJECT_PATH_CONFIG . "baikal.yaml");
+        } catch (\Exception $e) {
+            error_log('Error reading baikal.yaml file : ' . $e->getMessage());
+        }
+
+        if (isset($config['system']['configured_version']) && $config['system']['configured_version'] === BAIKAL_VERSION) {
+            $sMessage = "Your system is configured to use version <strong>" . $config['system']['configured_version'] . "</strong>.<br />There's no upgrade to be done.";
         } else {
-            $sMessage = "Upgrading Baïkal from version <strong>" . BAIKAL_CONFIGURED_VERSION . "</strong> to version <strong>" . BAIKAL_VERSION . "</strong>";
+            $oldVersion = "Unknown";
+            if (isset($config['system']['configured_version'])) {
+                $oldVersion = $config['system']['configured_version'];
+            }
+            $sMessage = "Upgrading Baïkal from version <strong>$oldVersion</strong> to version <strong>" . BAIKAL_VERSION . "</strong>";
         }
 
         $oView->setData("message", $sMessage);
         $oView->setData("projectUri", PROJECT_URI);
+
         return $oView->render();
     }
 }

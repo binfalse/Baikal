@@ -1,4 +1,5 @@
 <?php
+
 #################################################################
 #  Copyright notice
 #
@@ -24,7 +25,6 @@
 #  This copyright notice MUST APPEAR in all copies of the script!
 #################################################################
 
-
 namespace Baikal\Model\Calendar;
 
 class Calendar extends \Flake\Core\Model\Db {
@@ -38,7 +38,7 @@ class Calendar extends \Flake\Core\Model\Db {
 
     function hasInstances() {
         $rSql = $GLOBALS["DB"]->exec_SELECTquery(
-            "*",
+            "count(*)",
             "calendarinstances",
             "calendarid" . "='" . $this->aData["id"] . "'"
         );
@@ -47,13 +47,15 @@ class Calendar extends \Flake\Core\Model\Db {
             return false;
         } else {
             reset($aRs);
-            return true;
+
+            return $aRs["count(*)"] > 1;
         }
     }
 
     function destroy() {
-        if (!$this->hasInstances()) {
-            parent::destroy();
+        if ($this->hasInstances()) {
+            throw new \Exception("Trying to destroy a calendar with instances");
         }
+        parent::destroy();
     }
 }

@@ -1,4 +1,5 @@
 <?php
+
 #################################################################
 #  Copyright notice
 #
@@ -24,11 +25,11 @@
 #  This copyright notice MUST APPEAR in all copies of the script!
 #################################################################
 
-
 namespace Flake;
 
-class Framework extends \Flake\Core\Framework {
+use Symfony\Component\Yaml\Yaml;
 
+class Framework extends \Flake\Core\Framework {
     static function rmBeginSlash($sString) {
         if (substr($sString, 0, 1) === "/") {
             $sString = substr($sString, 1);
@@ -63,13 +64,16 @@ class Framework extends \Flake\Core\Framework {
 
     static function rmQuery($sString) {
         $iStart = strpos($sString, "?");
+
         return ($iStart === false) ? $sString : substr($sString, 0, $iStart);
     }
 
     static function rmScriptName($sString, $sScriptName) {
         $sScriptBaseName = basename($sScriptName);
-        if (self::endswith($sString, $sScriptBaseName))
+        if (self::endswith($sString, $sScriptBaseName)) {
             return substr($sString, 0, -strlen($sScriptBaseName));
+        }
+
         return $sString;
     }
 
@@ -81,12 +85,14 @@ class Framework extends \Flake\Core\Framework {
 
     static function endsWith($sString, $sTest) {
         $iTestLen = strlen($sTest);
-        if ($iTestLen > strlen($sString)) return false;
+        if ($iTestLen > strlen($sString)) {
+            return false;
+        }
+
         return substr_compare($sString, $sTest, -$iTestLen) === 0;
     }
 
     static function bootstrap() {
-
         # Asserting PHP 5.5.0+
         if (version_compare(PHP_VERSION, '5.5.0', '<')) {
             die('Flake Fatal Error: Flake requires PHP 5.5.0+ to run properly. Your version is: ' . PHP_VERSION . '.');
@@ -117,10 +123,18 @@ class Framework extends \Flake\Core\Framework {
         # Also: https://github.com/netgusto/Baikal/issues/155
         if (in_array(strtolower(ini_get('magic_quotes_gpc')), ['1', 'on'])) {
             $process = [];
-            if (isset($_GET) && is_array($_GET)) { $process[] = &$_GET;}
-            if (isset($_POST) && is_array($_POST)) { $process[] = &$_POST;}
-            if (isset($_COOKIE) && is_array($_COOKIE)) { $process[] = &$_COOKIE;}
-            if (isset($_REQUEST) && is_array($_REQUEST)) { $process[] = &$_REQUEST;}
+            if (isset($_GET) && is_array($_GET)) {
+                $process[] = &$_GET;
+            }
+            if (isset($_POST) && is_array($_POST)) {
+                $process[] = &$_POST;
+            }
+            if (isset($_COOKIE) && is_array($_COOKIE)) {
+                $process[] = &$_COOKIE;
+            }
+            if (isset($_REQUEST) && is_array($_REQUEST)) {
+                $process[] = &$_REQUEST;
+            }
 
             foreach ($process as $key => $val) {
                 foreach ($val as $k => $v) {
@@ -150,39 +164,20 @@ class Framework extends \Flake\Core\Framework {
         define("PROJECT_PATH_CORE", PROJECT_PATH_ROOT . "Core/");
         define("PROJECT_PATH_CORERESOURCES", PROJECT_PATH_CORE . "Resources/");
         define("PROJECT_PATH_SPECIFIC", PROJECT_PATH_ROOT . "Specific/");
+        define("PROJECT_PATH_CONFIG", PROJECT_PATH_ROOT . "config/");
         define("PROJECT_PATH_FRAMEWORKS", PROJECT_PATH_CORE . "Frameworks/");
         define("PROJECT_PATH_WWWROOT", PROJECT_PATH_CORE . "WWWRoot/");
 
-        require_once(PROJECT_PATH_CORE . "Distrib.php");
+        require_once PROJECT_PATH_CORE . "Distrib.php";
 
         define("PROJECT_PATH_DOCUMENTROOT", PROJECT_PATH_ROOT . "html/");
 
-        # Determine PROJECT_BASEURI
-        $sScript = substr($_SERVER["SCRIPT_FILENAME"], strlen($_SERVER["DOCUMENT_ROOT"]));
-        $sDirName = str_replace("\\", "/", dirname($sScript));    # fix windows backslashes
-
-        if ($sDirName !== ".") {
-            $sDirName = self::appendSlash($sDirName);
-        } else {
-            $sDirName = "/";
-        }
-
-        $sBaseUrl = self::rmBeginSlash(self::rmProjectContext($sDirName));
-        define("PROJECT_BASEURI", self::prependSlash($sBaseUrl));    # SabreDAV needs a "/" at the beginning of BASEURL
-
-        # Determine PROJECT_URI
-        $sProtocol = \Flake\Util\Tools::getCurrentProtocol();
-        $sHttpBaseUrl = strtolower($_SERVER["REQUEST_URI"]);
-        $sHttpBaseUrl = self::rmQuery($sHttpBaseUrl);
-        $sHttpBaseUrl = self::rmScriptName($sHttpBaseUrl, $sScript);
-        $sHttpBaseUrl = self::rmProjectContext($sHttpBaseUrl);
-        define("PROJECT_URI", $sProtocol . "://" . $_SERVER["HTTP_HOST"] . $sHttpBaseUrl);
-        unset($sScript); unset($sDirName); unset($sBaseUrl); unset($sProtocol); unset($sHttpBaseUrl);
+        self::defineBaseUri();
 
         #################################################################################################
 
         # Include Flake Framework config
-        require_once(FLAKE_PATH_ROOT . "config.php");
+        require_once FLAKE_PATH_ROOT . "config.php";
 
         # Determine Router class
         $GLOBALS["ROUTER"] = \Flake\Util\Tools::router();
@@ -193,7 +188,6 @@ class Framework extends \Flake\Core\Framework {
             if (!isset($_SESSION['CSRF_TOKEN'])) {
                 $_SESSION['CSRF_TOKEN'] = bin2hex(openssl_random_pseudo_bytes(20));
             }
-
         }
 
         setlocale(LC_ALL, FLAKE_LOCALE);
@@ -206,94 +200,124 @@ class Framework extends \Flake\Core\Framework {
         define("FLAKE_URIPATH", \Flake\Util\Tools::stripBeginSlash($aUrlInfo["path"]));
         unset($aUrlInfo);
 
-
-        # Include Project config
-        # NOTE: DB initialization and App config files inclusion
-        # do not break execution if not properly executed, as
-        # these errors will have to be caught later in the process
-        # notably by the App install tool, if available; breaking right now
-        # would forbid such install tool forwarding, for instance
-
-        $sConfigPath = PROJECT_PATH_SPECIFIC . "config.php";
-        $sConfigSystemPath = PROJECT_PATH_SPECIFIC . "config.system.php";
-
-        if (file_exists($sConfigPath)) {
-            require_once($sConfigPath);
-        }
-
-        if (file_exists($sConfigSystemPath)) {
-            require_once($sConfigSystemPath);
-        }
-
         self::initDb();
     }
 
+    protected static function defineBaseUri() {
+        try {
+            $config = Yaml::parseFile(PROJECT_PATH_CONFIG . "baikal.yaml");
+            if (isset($config["system"]["base_uri"]) && $config["system"]["base_uri"] !== "") {
+                // SabreDAV needs a "/" at the beginning of BASEURL
+                define("PROJECT_BASEURI",
+                        self::prependSlash(self::appendSlash($config["system"]["base_uri"])));
+                define("PROJECT_URI", \Flake\Util\Tools::getCurrentProtocol() . "://"
+                    . $_SERVER["HTTP_HOST"] . PROJECT_BASEURI);
+
+                return;
+            }
+        } catch (\Exception $e) {
+            error_log($e);
+        }
+
+        $sScript = substr($_SERVER["SCRIPT_FILENAME"], strlen($_SERVER["DOCUMENT_ROOT"]));
+        $sDirName = str_replace("\\", "/", dirname($sScript));    // fix windows backslashes
+
+        if ($sDirName !== ".") {
+            $sDirName = self::appendSlash($sDirName);
+        } else {
+            $sDirName = "/";
+        }
+
+        $sBaseUrl = self::rmBeginSlash(self::rmProjectContext($sDirName));
+        define("PROJECT_BASEURI", self::prependSlash($sBaseUrl));    // SabreDAV needs a "/" at the beginning of BASEURL
+
+        # Determine PROJECT_URI
+        $sProtocol = \Flake\Util\Tools::getCurrentProtocol();
+        $sHttpBaseUrl = strtolower($_SERVER["REQUEST_URI"]);
+        $sHttpBaseUrl = self::rmQuery($sHttpBaseUrl);
+        $sHttpBaseUrl = self::rmScriptName($sHttpBaseUrl, $sScript);
+        $sHttpBaseUrl = self::rmProjectContext($sHttpBaseUrl);
+        define("PROJECT_URI", $sProtocol . "://" . $_SERVER["HTTP_HOST"] . $sHttpBaseUrl);
+        unset($sScript);
+        unset($sDirName);
+        unset($sBaseUrl);
+        unset($sProtocol);
+        unset($sHttpBaseUrl);
+    }
+
     protected static function initDb() {
-        # Dont init db on install, but in normal mode and when upgrading
-        if (defined("BAIKAL_CONTEXT_INSTALL") && (!defined('BAIKAL_CONFIGURED_VERSION') || BAIKAL_CONFIGURED_VERSION === BAIKAL_VERSION)) {
+        try {
+            $config = Yaml::parseFile(PROJECT_PATH_CONFIG . "baikal.yaml");
+        } catch (\Exception $e) {
+            error_log('Error reading baikal.yaml file : ' . $e->getMessage());
+
             return true;
         }
-        if (defined("PROJECT_DB_MYSQL") && PROJECT_DB_MYSQL === true) {
-            self::initDbMysql();
+        # Dont init db on install, but in normal mode and when upgrading
+        if (defined("BAIKAL_CONTEXT_INSTALL") && (!isset($config['system']['configured_version']) || $config['system']['configured_version'] === BAIKAL_VERSION)) {
+            return true;
+        }
+        if ($config['database']['mysql'] === true) {
+            self::initDbMysql($config);
         } else {
-            self::initDbSqlite();
+            self::initDbSqlite($config);
         }
     }
 
-    protected static function initDbSqlite() {
+    protected static function initDbSqlite(array $config) {
         # Asserting DB filepath is set
-        if (!defined("PROJECT_SQLITE_FILE")) {
+        if (!$config['database']['sqlite_file']) {
             return false;
         }
 
         # Asserting DB file is writable
-        if (file_exists(PROJECT_SQLITE_FILE) && !is_writable(PROJECT_SQLITE_FILE)) {
-            die("<h3>DB file is not writable. Please give write permissions on file '<span style='font-family: monospace; background: yellow;'>" . PROJECT_SQLITE_FILE . "</span>'</h3>");
+        if (file_exists($config['database']['sqlite_file']) && !is_writable($config['database']['sqlite_file'])) {
+            die("<h3>DB file is not writable. Please give write permissions on file '<span style='font-family: monospace; background: yellow;'>" . $config['database']['sqlite_file'] . "</span>'</h3>");
         }
 
         # Asserting DB directory is writable
-        if (!is_writable(dirname(PROJECT_SQLITE_FILE))) {
-            die("<h3>The <em>FOLDER</em> containing the DB file is not writable, and it has to.<br />Please give write permissions on folder '<span style='font-family: monospace; background: yellow;'>" . dirname(PROJECT_SQLITE_FILE) . "</span>'</h3>");
+        if (!is_writable(dirname($config['database']['sqlite_file']))) {
+            die("<h3>The <em>FOLDER</em> containing the DB file is not writable, and it has to.<br />Please give write permissions on folder '<span style='font-family: monospace; background: yellow;'>" . dirname($config['database']['sqlite_file']) . "</span>'</h3>");
         }
 
-        if (file_exists(PROJECT_SQLITE_FILE) && is_readable(PROJECT_SQLITE_FILE) && !isset($GLOBALS["DB"])) {
-            $GLOBALS["DB"] = new \Flake\Core\Database\Sqlite(PROJECT_SQLITE_FILE);
+        if (file_exists($config['database']['sqlite_file']) && is_readable($config['database']['sqlite_file']) && !isset($GLOBALS["DB"])) {
+            $GLOBALS["DB"] = new \Flake\Core\Database\Sqlite($config['database']['sqlite_file']);
+
             return true;
         }
 
         return false;
     }
 
-    protected static function initDbMysql() {
-
-        if (!defined("PROJECT_DB_MYSQL_HOST")) {
-            die("<h3>The constant PROJECT_DB_MYSQL_HOST, containing the MySQL host name, is not set.<br />You should set it in Specific/config.system.php</h3>");
+    protected static function initDbMysql(array $config) {
+        if (!$config['database']['mysql_host']) {
+            die("<h3>The constant PROJECT_DB_MYSQL_HOST, containing the MySQL host name, is not set.<br />You should set it in config/baikal.yaml</h3>");
         }
 
-        if (!defined("PROJECT_DB_MYSQL_DBNAME")) {
-            die("<h3>The constant PROJECT_DB_MYSQL_DBNAME, containing the MySQL database name, is not set.<br />You should set it in Specific/config.system.php</h3>");
+        if (!$config['database']['mysql_dbname']) {
+            die("<h3>The constant PROJECT_DB_MYSQL_DBNAME, containing the MySQL database name, is not set.<br />You should set it in config/baikal.yaml</h3>");
         }
 
-        if (!defined("PROJECT_DB_MYSQL_USERNAME")) {
-            die("<h3>The constant PROJECT_DB_MYSQL_USERNAME, containing the MySQL database username, is not set.<br />You should set it in Specific/config.system.php</h3>");
+        if (!$config['database']['mysql_username']) {
+            die("<h3>The constant PROJECT_DB_MYSQL_USERNAME, containing the MySQL database username, is not set.<br />You should set it in config/baikal.yaml</h3>");
         }
 
-        if (!defined("PROJECT_DB_MYSQL_PASSWORD")) {
-            die("<h3>The constant PROJECT_DB_MYSQL_PASSWORD, containing the MySQL database password, is not set.<br />You should set it in Specific/config.system.php</h3>");
+        if (!$config['database']['mysql_password']) {
+            die("<h3>The constant PROJECT_DB_MYSQL_PASSWORD, containing the MySQL database password, is not set.<br />You should set it in config/baikal.yaml</h3>");
         }
 
         try {
             $GLOBALS["DB"] = new \Flake\Core\Database\Mysql(
-                PROJECT_DB_MYSQL_HOST,
-                PROJECT_DB_MYSQL_DBNAME,
-                PROJECT_DB_MYSQL_USERNAME,
-                PROJECT_DB_MYSQL_PASSWORD
+                $config['database']['mysql_host'],
+                $config['database']['mysql_dbname'],
+                $config['database']['mysql_username'],
+                $config['database']['mysql_password']
             );
 
             # We now setup t6he connexion to use UTF8
             $GLOBALS["DB"]->query("SET NAMES UTF8");
         } catch (\Exception $e) {
-            die("<h3>Baïkal was not able to establish a connexion to the configured MySQL database (as configured in Specific/config.system.php).</h3>");
+            die("<h3>Baïkal was not able to establish a connexion to the configured MySQL database (as configured in config/baikal.yaml).</h3>");
         }
 
         return true;

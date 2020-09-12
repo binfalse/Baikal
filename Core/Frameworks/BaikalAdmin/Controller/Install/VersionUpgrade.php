@@ -1,4 +1,5 @@
 <?php
+
 #################################################################
 #  Copyright notice
 #
@@ -24,11 +25,11 @@
 #  This copyright notice MUST APPEAR in all copies of the script!
 #################################################################
 
-
 namespace BaikalAdmin\Controller\Install;
 
-class VersionUpgrade extends \Flake\Core\Controller {
+use Symfony\Component\Yaml\Yaml;
 
+class VersionUpgrade extends \Flake\Core\Controller {
     protected $aMessages = [];
     protected $oModel;
     protected $oForm;    # \Formal\Form
@@ -40,11 +41,17 @@ class VersionUpgrade extends \Flake\Core\Controller {
     }
 
     function render() {
+        try {
+            $config = Yaml::parseFile(PROJECT_PATH_CONFIG . "baikal.yaml");
+        } catch (\Exception $e) {
+            error_log('Error reading baikal.yaml file : ' . $e->getMessage());
+        }
+
         $sBigIcon = "glyph2x-magic";
         $sBaikalVersion = BAIKAL_VERSION;
-        $sBaikalConfiguredVersion = BAIKAL_CONFIGURED_VERSION;
+        $sBaikalConfiguredVersion = $config['system']['configured_version'];
 
-        if (BAIKAL_CONFIGURED_VERSION === BAIKAL_VERSION) {
+        if ($config['system']['configured_version'] === BAIKAL_VERSION) {
             $sMessage = "Your system is configured to use version <strong>" . $sBaikalConfiguredVersion . "</strong>.<br />There's no upgrade to be done.";
         } else {
             $sMessage = "Upgrading Baïkal from version <strong>" . $sBaikalConfiguredVersion . "</strong> to version <strong>" . $sBaikalVersion . "</strong>";
@@ -58,10 +65,10 @@ class VersionUpgrade extends \Flake\Core\Controller {
 HTML;
 
         try {
-            $bSuccess = $this->upgrade(BAIKAL_CONFIGURED_VERSION, BAIKAL_VERSION);
+            $bSuccess = $this->upgrade($config['system']['configured_version'], BAIKAL_VERSION);
         } catch (\Exception $e) {
             $bSuccess = false;
-            $this->aErrors[] = 'Uncaught exception during upgrade: ' . (string)$e;
+            $this->aErrors[] = 'Uncaught exception during upgrade: ' . (string) $e;
         }
 
         if (!empty($this->aErrors)) {
@@ -82,7 +89,6 @@ HTML;
     }
 
     protected function upgrade($sVersionFrom, $sVersionTo) {
-
         if (version_compare($sVersionFrom, '0.2.3', '<=')) {
             throw new \Exception('This version of Baikal does not support upgrading from version 0.2.3 and older. Please request help on Github if this is a problem.');
         }
@@ -94,12 +100,10 @@ HTML;
             // Upgrading from sabre/dav 1.8 schema to 3.1 schema.
 
             if (defined("PROJECT_DB_MYSQL") && PROJECT_DB_MYSQL === true) {
-
                 // MySQL upgrade
 
                 // sabre/dav 2.0 changes
                 foreach (['calendar', 'addressbook'] as $dataType) {
-
                     $tableName = $dataType . 's';
                     $pdo->exec("ALTER TABLE $tableName ADD synctoken INT(11) UNSIGNED NOT NULL DEFAULT '1'");
                     $this->aSuccess[] = 'synctoken was added to ' . $tableName;
@@ -119,7 +123,6 @@ HTML;
                         ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
                     ");
                     $this->aSuccess[] = $changesTable . ' was created';
-
                 }
 
                 $pdo->exec("
@@ -180,13 +183,11 @@ HTML;
                 ");
                 $pdo->exec('CREATE UNIQUE INDEX path_property ON propertystorage (path(600), name(100));');
                 $this->aSuccess[] = 'propertystorage was created';
-
             } else {
                 // SQLite upgrade
 
                 // sabre/dav 2.0 changes
                 foreach (['calendar', 'addressbook'] as $dataType) {
-
                     $tableName = $dataType . 's';
                     // Note: we can't remove the ctag field in sqlite :(;
                     $pdo->exec("ALTER TABLE $tableName ADD synctoken integer");
@@ -203,7 +204,6 @@ HTML;
                         );
                     ");
                     $this->aSuccess[] = $changesTable . ' was created';
-
                 }
                 $pdo->exec("
                     CREATE TABLE calendarsubscriptions (
@@ -259,8 +259,6 @@ HTML;
                 ");
                 $pdo->exec('CREATE UNIQUE INDEX path_property ON propertystorage (path, name);');
                 $this->aSuccess[] = 'propertystorage was created';
-
-
             }
 
             // Statements for both SQLite and MySQL
@@ -279,7 +277,6 @@ HTML;
             $counter = 0;
 
             while ($row = $result->fetch(\PDO::FETCH_ASSOC)) {
-
                 try {
                     $vobj = \Sabre\VObject\Reader::read($row['calendardata']);
                 } catch (\Exception $e) {
@@ -292,11 +289,10 @@ HTML;
                     $vobj->destroy();
                     continue;
                 }
-                $uid = (string)$item->UID;
+                $uid = (string) $item->UID;
                 $stmt->execute([$uid, $row['id']]);
-                $counter++;
+                ++$counter;
                 $vobj->destroy();
-
             }
             $this->aSuccess[] = 'uid was recalculated for calendarobjects';
 
@@ -304,25 +300,20 @@ HTML;
             $stmt1 = $pdo->prepare('INSERT INTO propertystorage (path, name, valuetype, value) VALUES (?, ?, 3, ?)');
 
             while ($row = $result->fetch(\PDO::FETCH_ASSOC)) {
-
                 // Inserting the new record
                 $stmt1->execute([
                     'addressbooks/' . basename($row['uri']),
                     '{http://calendarserver.org/ns/}me-card',
                     serialize(new \Sabre\DAV\Xml\Property\Href($row['vcardurl']))
                 ]);
-
             }
             $this->aSuccess[] = 'vcardurl was migrated to the propertystorage system';
-
         }
         if (version_compare($sVersionFrom, '0.4.0', '<')) {
-
             // The sqlite schema had issues with both the calendar and
             // addressbooks tables. The tables didn't have a DEFAULT '1' for
             // the synctoken column. So we're adding it now.
             if (!defined("PROJECT_DB_MYSQL") || PROJECT_DB_MYSQL === false) {
-
                 $pdo->exec('UPDATE calendars SET synctoken = 1 WHERE synctoken IS NULL');
 
                 $tmpTable = '_' . time();
@@ -346,17 +337,13 @@ CREATE TABLE calendars (
                 $pdo->exec('INSERT INTO calendars SELECT id, principaluri, displayname, uri, synctoken, description, calendarorder, calendarcolor, timezone, components, transparent FROM calendars' . $tmpTable);
 
                 $this->aSuccess[] = 'Updated calendars table';
-
             }
-
         }
         if (version_compare($sVersionFrom, '0.4.5', '<=')) {
-
             // Similar to upgrading from older than 0.4.5, there were still
             // issues with a missing DEFAULT 1 for sthe synctoken field in the
             // addressbook.
             if (!defined("PROJECT_DB_MYSQL") || PROJECT_DB_MYSQL === false) {
-
                 $pdo->exec('UPDATE addressbooks SET synctoken = 1 WHERE synctoken IS NULL');
 
                 $tmpTable = '_' . time();
@@ -375,9 +362,7 @@ CREATE TABLE addressbooks (
 
                 $pdo->exec('INSERT INTO addressbooks SELECT id, principaluri, displayname, uri, description, synctoken FROM addressbooks' . $tmpTable);
                 $this->aSuccess[] = 'Updated addressbooks table';
-
             }
-
         }
         if (version_compare($sVersionFrom, '0.5.1', '<')) {
             if (!defined("PROJECT_DB_MYSQL") || PROJECT_DB_MYSQL === false) {
@@ -515,32 +500,23 @@ SQL
             $this->aSuccess[] = 'Migrated calendars table';
         }
 
-
         $this->updateConfiguredVersion($sVersionTo);
+
         return true;
     }
 
     protected function updateConfiguredVersion($sVersionTo) {
-
-        # Create new settings
-        $oConfig = new \Baikal\Model\Config\Standard(PROJECT_PATH_SPECIFIC . "config.php");
-        $oConfig->persist();
-
         # Update BAIKAL_CONFIGURED_VERSION
-        $oConfig = new \Baikal\Model\Config\System(PROJECT_PATH_SPECIFIC . "config.system.php");
-        $oConfig->set("BAIKAL_CONFIGURED_VERSION", $sVersionTo);
+        $oConfig = new \Baikal\Model\Config\Standard();
+        $oConfig->set("configured_version", $sVersionTo);
         $oConfig->persist();
     }
 
     protected function assertConfigWritable() {
         # Parsing the config also makes sure that it is not malformed
-        $oConfig = new \Baikal\Model\Config\Standard(PROJECT_PATH_SPECIFIC . "config.php");
+        $oConfig = new \Baikal\Model\Config\Standard();
         if ($oConfig->writable() === false) {
-            throw new \Exception(PROJECT_PATH_SPECIFIC . "config.php is not writable");
-        }
-        $oConfig = new \Baikal\Model\Config\System(PROJECT_PATH_SPECIFIC . "config.system.php");
-        if ($oConfig->writable() === false) {
-            throw new \Exception(PROJECT_PATH_SPECIFIC . "config.system.php is not writable");
+            throw new \Exception(PROJECT_PATH_CONFIG . "baikal.yaml is not writable");
         }
     }
 }

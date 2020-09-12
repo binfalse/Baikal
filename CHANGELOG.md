@@ -1,6 +1,22 @@
 ChangeLog
 =========
 
+0.7.0 (2020-05-31)
+------------------
+
+* New configuration format
+* Added support for php 7.4
+* REMOVED support for php 7.0
+* Shows event count per calendar
+* Shows contact count per address book
+* Ships with sabre/dav 4.1.0
+
+0.6.1 (2019-11-13)
+------------------
+
+* Fixed sync issues with Thunderbird
+* Ships with sabre/dav 4.0.2
+
 0.6.0 (2019-08-25)
 ------------------
 

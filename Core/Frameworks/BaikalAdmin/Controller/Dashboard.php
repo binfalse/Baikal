@@ -1,4 +1,5 @@
 <?php
+
 #################################################################
 #  Copyright notice
 #
@@ -24,21 +25,23 @@
 #  This copyright notice MUST APPEAR in all copies of the script!
 #################################################################
 
-
 namespace BaikalAdmin\Controller;
 
-class Dashboard extends \Flake\Core\Controller {
+use Symfony\Component\Yaml\Yaml;
 
+class Dashboard extends \Flake\Core\Controller {
     function execute() {
     }
 
     function render() {
+        $config = Yaml::parseFile(PROJECT_PATH_CONFIG . "baikal.yaml");
+
         $oView = new \BaikalAdmin\View\Dashboard();
         $oView->setData("BAIKAL_VERSION", BAIKAL_VERSION);
 
         # Services status
-        $oView->setData("BAIKAL_CAL_ENABLED", BAIKAL_CAL_ENABLED);
-        $oView->setData("BAIKAL_CARD_ENABLED", BAIKAL_CARD_ENABLED);
+        $oView->setData("cal_enabled", $config['system']['cal_enabled']);
+        $oView->setData("card_enabled", $config['system']['card_enabled']);
 
         # Statistics: Users
         $iNbUsers = \Baikal\Model\User::getBaseRequester()->count();

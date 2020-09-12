@@ -1,0 +1,16 @@
+parameters:
+  level: 0
+  excludes_analyse:
+    - Core/Frameworks/BaikalAdmin/Resources/GlyphiconsPro/generate-sprite.php
+    - Core/Resources/Web/BaikalAdmin/GlyphiconsPro/generate-sprite.php
+    - html/res/core/BaikalAdmin/GlyphiconsPro/generate-sprite.php
+  ignoreErrors:
+    -
+      message: '#Instantiated class Flake\\Core\\Exception not found.#'
+      path: Core/Frameworks/Flake/Util/Frameworks.php
+    -
+      message: '#Call to static method compileCss\(\) on an unknown class Frameworks\\LessPHP\\Delegate.#'
+      path: Core/Frameworks/Flake/Controller/Page.php
+    -
+      message: '#Access to undefined constant Flake\\Core\\Model::LABELFIELD.#'
+      path: Core/Frameworks/Flake/Core/Model.php

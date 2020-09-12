@@ -1,4 +1,5 @@
 <?php
+
 #################################################################
 #  Copyright notice
 #
@@ -24,15 +25,9 @@
 #  This copyright notice MUST APPEAR in all copies of the script!
 #################################################################
 
-
 namespace Flake\Core\Database;
 
 class Sqlite extends \Flake\Core\Database {
-
-    protected $oDb = false;    // current DB link
-    protected $debugOutput = false;
-    protected $store_lastBuiltQuery = true;
-    protected $debug_lastBuiltQuery = "";
     protected $sDbPath = "";
 
     function __construct($sDbPath) {
@@ -57,6 +52,7 @@ class Sqlite extends \Flake\Core\Database {
         }
 
         reset($aTables);
+
         return $aTables;
     }
 }

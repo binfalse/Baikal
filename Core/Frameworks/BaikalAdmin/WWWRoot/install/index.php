@@ -24,6 +24,8 @@
 *  This copyright notice MUST APPEAR in all copies of the script!
 ***************************************************************/
 
+use Symfony\Component\Yaml\Yaml;
+
 ini_set("session.cookie_httponly", 1);
 ini_set("log_errors", 1);
 $maxtime = ini_get('max_execution_time');
@@ -46,7 +48,7 @@ if (file_exists(dirname(dirname(getcwd())) . "/Core")) {
 }
 
 if (!file_exists(PROJECT_PATH_ROOT . 'vendor/')) {
-    die('<h1>Incomplete installation</h1><p>Ba&iuml;kal dependencies have not been installed. Please, execute "<strong>composer install</strong>" in the folder where you installed Ba&iuml;kal.');
+    die('<h1>Incomplete installation</h1><p>Ba&iuml;kal dependencies have not been installed. If you are a regular user, this means that you probably downloaded the wrong zip file.</p><p>To install the dependencies manually, execute "<strong>composer install</strong>" in the Ba&iuml;kal root folder.</p>');
 }
 
 require PROJECT_PATH_ROOT . "vendor/autoload.php";
@@ -65,15 +67,21 @@ $oPage->setBaseUrl(PROJECT_URI);
 
 $oPage->zone("navbar")->addBlock(new \BaikalAdmin\Controller\Navigation\Topbar\Install());
 
-if (!defined("BAIKAL_CONFIGURED_VERSION")) {
+try {
+    $config = Yaml::parseFile(PROJECT_PATH_CONFIG . "baikal.yaml");
+} catch (\Exception $e) {
+    $config = null;
+    error_log('Error reading baikal.yaml file : ' . $e->getMessage());
+}
+
+if (!$config || !isset($config['system']["configured_version"])) {
     # we have to upgrade Baïkal (existing installation)
     $oPage->zone("Payload")->addBlock(new \BaikalAdmin\Controller\Install\Initialize());
-
-} elseif (!defined("BAIKAL_ADMIN_PASSWORDHASH")) {
+} elseif (!isset($config['system']["admin_passwordhash"])) {
     # we have to set an admin password
     $oPage->zone("Payload")->addBlock(new \BaikalAdmin\Controller\Install\Initialize());
 } else {
-    if (BAIKAL_CONFIGURED_VERSION !== BAIKAL_VERSION) {
+    if ($config['system']["configured_version"] !== BAIKAL_VERSION) {
         # we have to upgrade Baïkal
         if (\Flake\Util\Tools::GET("upgradeConfirmed")) {
             $oPage->zone("Payload")->addBlock(new \BaikalAdmin\Controller\Install\VersionUpgrade());

@@ -41,7 +41,7 @@ if (file_exists(dirname(getcwd()) . "/Core")) {
 }
 
 if (!file_exists(PROJECT_PATH_ROOT . 'vendor/')) {
-    die('<h1>Incomplete installation</h1><p>Ba&iuml;kal dependencies have not been installed. Please, execute "<strong>composer install</strong>" in the folder where you installed Ba&iuml;kal.');
+    die('<h1>Incomplete installation</h1><p>Ba&iuml;kal dependencies have not been installed. If you are a regular user, this means that you probably downloaded the wrong zip file.</p><p>To install the dependencies manually, execute "<strong>composer install</strong>" in the Ba&iuml;kal root folder.</p>');
 }
 
 require PROJECT_PATH_ROOT . 'vendor/autoload.php';
@@ -59,19 +59,17 @@ $oPage->injectHTTPHeaders();
 $oPage->setTitle("Baïkal " . BAIKAL_VERSION . " Web Admin");
 $oPage->setBaseUrl(PROJECT_URI);
 
-if (! \BaikalAdmin\Core\Auth::isAuthenticated()) {
+if (!\BaikalAdmin\Core\Auth::isAuthenticated()) {
     if (\BaikalAdmin\Core\Auth::authenticate()) {
         // Redirect to itself
         header('Location: ' . $_SERVER['REQUEST_URI']);
         exit();
-
     } else {
         // Draw login page
         $oPage->zone("navbar")->addBlock(new \BaikalAdmin\Controller\Navigation\Topbar\Anonymous());
         $oPage->zone("Payload")->addBlock(new \BaikalAdmin\Controller\Login());
     }
 } else {
-
     // CSRF token check
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!isset($_POST['CSRF_TOKEN'])) {

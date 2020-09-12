@@ -1,4 +1,5 @@
 <?php
+
 #################################################################
 #  Copyright notice
 #
@@ -24,8 +25,9 @@
 #  This copyright notice MUST APPEAR in all copies of the script!
 #################################################################
 
-
 namespace Baikal\Model;
+
+use Symfony\Component\Yaml\Yaml;
 
 class User extends \Flake\Core\Model\Db {
     const DATATABLE = "users";
@@ -77,7 +79,6 @@ class User extends \Flake\Core\Model\Db {
     }
 
     function get($sPropName) {
-
         if ($sPropName === "password" || $sPropName === "passwordconfirm") {
             # Special handling for password and passwordconfirm
             return "";
@@ -99,7 +100,6 @@ class User extends \Flake\Core\Model\Db {
     }
 
     function set($sPropName, $sPropValue) {
-
         if ($sPropName === "password" || $sPropName === "passwordconfirm") {
             # Special handling for password and passwordconfirm
 
@@ -127,7 +127,6 @@ class User extends \Flake\Core\Model\Db {
     }
 
     function persist() {
-
         $bFloating = $this->floating();
 
         # Persisted first, as Model users loads this data
@@ -137,7 +136,6 @@ class User extends \Flake\Core\Model\Db {
         parent::persist();
 
         if ($bFloating) {
-
             # Creating default calendar for user
             $oDefaultCalendar = new \Baikal\Model\Calendar();
             $oDefaultCalendar->set(
@@ -183,7 +181,9 @@ class User extends \Flake\Core\Model\Db {
         # TODO: delete all related resources (principals, calendars, calendar events, contact books and contacts)
 
         # Destroying identity principal
-        $this->oIdentityPrincipal->destroy();
+        if ($this->oIdentityPrincipal != null) {
+            $this->oIdentityPrincipal->destroy();
+        }
 
         $oCalendars = $this->getCalendarsBaseRequester()->execute();
         foreach ($oCalendars as $calendar) {
@@ -279,6 +279,12 @@ class User extends \Flake\Core\Model\Db {
     }
 
     function getPasswordHashForPassword($sPassword) {
-        return md5($this->get("username") . ':' . BAIKAL_AUTH_REALM . ':' . $sPassword);
+        try {
+            $config = Yaml::parseFile(PROJECT_PATH_CONFIG . "baikal.yaml");
+        } catch (\Exception $e) {
+            error_log('Error reading baikal.yaml file : ' . $e->getMessage());
+        }
+
+        return md5($this->get("username") . ':' . $config['system']['auth_realm'] . ':' . $sPassword);
     }
 }

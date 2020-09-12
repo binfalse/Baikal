@@ -1,4 +1,5 @@
 <?php
+
 #################################################################
 #  Copyright notice
 #
@@ -24,13 +25,13 @@
 #  This copyright notice MUST APPEAR in all copies of the script!
 #################################################################
 
-
 namespace Baikal\Core;
 
 use PDO;
+use Symfony\Component\Yaml\Yaml;
 
 /**
- * The Baikal Server
+ * The Baikal Server.
  *
  * This class sets up the underlying Sabre\DAV\Server object.
  *
@@ -39,7 +40,6 @@ use PDO;
  * @license http://sabre.io/license/ GPLv2
  */
 class Server {
-
     /**
      * Is CalDAV enabled?
      *
@@ -55,40 +55,39 @@ class Server {
     protected $enableCardDAV;
 
     /**
-     * "Basic" or "Digest"
+     * "Basic" or "Digest".
      *
      * @var string
      */
     protected $authType;
 
     /**
-     * HTTP authentication realm
+     * HTTP authentication realm.
      *
      * @var string
      */
     protected $authRealm;
 
     /**
-     * Reference to Database object
+     * Reference to Database object.
      *
      * @var PDO
      */
     protected $pdo;
 
     /**
-     * baseUri for the sabre/dav server
+     * baseUri for the sabre/dav server.
      *
      * @var string
      */
     protected $baseUri;
 
     /**
-     * The sabre/dav Server object
+     * The sabre/dav Server object.
      *
      * @var \Sabre\DAV\Server
      */
     protected $server;
-
 
     /**
      * Creates the server object.
@@ -101,7 +100,6 @@ class Server {
      * @param string $baseUri
      */
     function __construct($enableCalDAV, $enableCardDAV, $authType, $authRealm, PDO $pdo, $baseUri) {
-
         $this->enableCalDAV = $enableCalDAV;
         $this->enableCardDAV = $enableCardDAV;
         $this->authType = $authType;
@@ -110,29 +108,33 @@ class Server {
         $this->baseUri = $baseUri;
 
         $this->initServer();
-
     }
 
     /**
-     * Starts processing
+     * Starts processing.
      *
      * @return void
      */
     function start() {
-
         $this->server->exec();
-
     }
 
     /**
-     * Initializes the server object
+     * Initializes the server object.
      *
      * @return void
      */
     protected function initServer() {
+        try {
+            $config = Yaml::parseFile(PROJECT_PATH_CONFIG . "baikal.yaml");
+        } catch (\Exception $e) {
+            error_log('Error reading baikal.yaml file : ' . $e->getMessage());
+        }
 
         if ($this->authType === 'Basic') {
             $authBackend = new \Baikal\Core\PDOBasicAuth($this->pdo, $this->authRealm);
+        } elseif ($this->authType === 'Apache') {
+            $authBackend = new \Sabre\DAV\Auth\Backend\Apache();
         } else {
             $authBackend = new \Sabre\DAV\Auth\Backend\PDO($this->pdo);
             $authBackend->setRealm($this->authRealm);
@@ -171,8 +173,8 @@ class Server {
             $this->server->addPlugin(new \Sabre\CalDAV\Schedule\Plugin());
             $this->server->addPlugin(new \Sabre\DAV\Sharing\Plugin());
             $this->server->addPlugin(new \Sabre\CalDAV\SharingPlugin());
-            if (defined("BAIKAL_INVITE_FROM") && BAIKAL_INVITE_FROM !== "") {
-                $this->server->addPlugin(new \Sabre\CalDAV\Schedule\IMipPlugin(BAIKAL_INVITE_FROM));
+            if (isset($config['system']["invite_from"]) && $config['system']["invite_from"] !== "") {
+                $this->server->addPlugin(new \Sabre\CalDAV\Schedule\IMipPlugin($config['system']["invite_from"]));
             }
         }
         if ($this->enableCardDAV) {
@@ -181,11 +183,10 @@ class Server {
         }
 
         $this->server->on('exception', [$this, 'exception']);
-
     }
 
     /**
-     * Log failed accesses, for further processing by other tools (fail2ban)
+     * Log failed accesses, matching the default fail2ban nginx/apache auth rules.
      *
      * @return void
      */
@@ -193,12 +194,15 @@ class Server {
         if ($e instanceof \Sabre\DAV\Exception\NotAuthenticated) {
             // Applications may make their first call without auth so don't log these attempts
             // Pattern from sabre/dav/lib/DAV/Auth/Backend/AbstractDigest.php
-            if (strpos($e->getMessage(), "No 'Authorization: Digest' header found.") === false) {
-                error_log('user not authorized: Baikal DAV: ' . $e->getMessage());
+            if (!preg_match("/No 'Authorization: (Basic|Digest)' header found./", $e->getMessage())) {
+                if (isset($_SERVER['SERVER_SOFTWARE']) && preg_match('/nginx/i', $_SERVER['SERVER_SOFTWARE'])) {
+                    error_log('user "(name stripped-out)" was not found in "Baikal DAV"', 4);
+                } else {
+                    error_log('user "(name stripped-out)" authentication failure for "Baikal DAV"', 4);
+                }
             }
         } else {
             error_log($e);
         }
     }
-
 }

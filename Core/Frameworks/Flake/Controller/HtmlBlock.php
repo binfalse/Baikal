@@ -1,4 +1,5 @@
 <?php
+
 #################################################################
 #  Copyright notice
 #
@@ -24,17 +25,19 @@
 #  This copyright notice MUST APPEAR in all copies of the script!
 #################################################################
 
-
 namespace Flake\Controller;
 
 class HtmlBlock extends \Flake\Core\Controller {
+    /**
+     * @var string
+     */
+    private $sHtml;
 
     function __construct($sHtml) {
         $this->sHtml = $sHtml;
     }
 
     function execute() {
-
     }
 
     function render() {

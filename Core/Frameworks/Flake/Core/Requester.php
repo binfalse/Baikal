@@ -1,4 +1,5 @@
 <?php
+
 #################################################################
 #  Copyright notice
 #
@@ -24,22 +25,28 @@
 #  This copyright notice MUST APPEAR in all copies of the script!
 #################################################################
 
-
 namespace Flake\Core;
 
 abstract class Requester extends \Flake\Core\FLObject {
+    protected $sModelClass = '';
+    protected $sOrderField = '';
+    protected $sOrderDirection = 'ASC';
+    protected $iLimitStart = false;
+    protected $iLimitNumber = false;
+
     function __construct($sModelClass) {
         $this->sModelClass = $sModelClass;
     }
 
     protected function addClause($sField, $sValue) {
         $this->addClauseEquals($sField, $sValue);
+
         return $this;
     }
 
     function limit($iStart, $iNumber = false) {
         if ($iNumber !== false) {
-            return $this->setLimitStart($iStart)->setLimitNumber($iLimitNumber);
+            return $this->setLimitStart($iStart)->setLimitNumber($iNumber);
         }
 
         return $this->setLimitStart($iStart);
@@ -48,19 +55,25 @@ abstract class Requester extends \Flake\Core\FLObject {
     function orderBy($sOrderField, $sOrderDirection = "ASC") {
         $this->sOrderField = $sOrderField;
         $this->sOrderDirection = $sOrderDirection;
+
         return $this;
     }
 
     function setLimitStart($iLimitStart) {
         $this->iLimitStart = $iLimitStart;
+
         return $this;
     }
 
     function setLimitNumber($iLimitNumber) {
         $this->iLimitNumber = $iLimitNumber;
+
         return $this;
     }
 
+    abstract function addClauseEquals($sField, $sValue);
+
     abstract function execute();
+
     abstract function count();
 }

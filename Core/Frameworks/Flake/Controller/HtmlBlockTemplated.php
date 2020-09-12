@@ -1,4 +1,5 @@
 <?php
+
 #################################################################
 #  Copyright notice
 #
@@ -24,10 +25,18 @@
 #  This copyright notice MUST APPEAR in all copies of the script!
 #################################################################
 
-
 namespace Flake\Controller;
 
 class HtmlBlockTemplated extends \Flake\Core\Controller {
+    /**
+     * @var string
+     */
+    private $sTemplatePath;
+
+    /**
+     * @var array
+     */
+    private $aMarkers;
 
     function __construct($sTemplatePath, $aMarkers = []) {
         $this->sTemplatePath = $sTemplatePath;
@@ -41,5 +50,9 @@ class HtmlBlockTemplated extends \Flake\Core\Controller {
         );
 
         return $sHtml;
+    }
+
+    function execute() {
+        // TODO: Implement execute() method.
     }
 }

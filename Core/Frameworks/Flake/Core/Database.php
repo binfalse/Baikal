@@ -1,4 +1,5 @@
 <?php
+
 #################################################################
 #  Copyright notice
 #
@@ -24,10 +25,13 @@
 #  This copyright notice MUST APPEAR in all copies of the script!
 #################################################################
 
-
 namespace Flake\Core;
 
 abstract class Database extends \Flake\Core\FLObject {
+    protected $debugOutput;
+    protected $debug_lastBuiltQuery;
+    protected $store_lastBuiltQuery;
+    protected $oDb;
 
     /* common stuff */
 
@@ -41,14 +45,12 @@ abstract class Database extends \Flake\Core\FLObject {
     }
 
     function INSERTquery($table, $fields_values, $no_quote_fields = false) {
-
-            // Table and fieldnames should be "SQL-injection-safe" when supplied to this function (contrary to values in the arrays which may be insecure).
-        if (is_array($fields_values) && count($fields_values))    {
-
-                // quote and escape values
+        // Table and fieldnames should be "SQL-injection-safe" when supplied to this function (contrary to values in the arrays which may be insecure).
+        if (is_array($fields_values) && count($fields_values)) {
+            // quote and escape values
             $fields_values = $this->fullQuoteArray($fields_values, $table, $no_quote_fields);
 
-                // Build query:
+            // Build query:
             $query = 'INSERT INTO ' . $table . '
 				(
 					' . implode(',
@@ -58,8 +60,11 @@ abstract class Database extends \Flake\Core\FLObject {
 					', $fields_values) . '
 				)';
 
-                // Return query:
-            if ($this->debugOutput || $this->store_lastBuiltQuery) $this->debug_lastBuiltQuery = $query;
+            // Return query:
+            if ($this->debugOutput || $this->store_lastBuiltQuery) {
+                $this->debug_lastBuiltQuery = $query;
+            }
+
             return $query;
         }
     }
@@ -69,12 +74,10 @@ abstract class Database extends \Flake\Core\FLObject {
     }
 
     function UPDATEquery($table, $where, $fields_values, $no_quote_fields = false) {
-
-            // Table and fieldnames should be "SQL-injection-safe" when supplied to this function (contrary to values in the arrays which may be insecure).
-        if (is_string($where))    {
-            if (is_array($fields_values) && count($fields_values))    {
-
-                    // quote and escape values
+        // Table and fieldnames should be "SQL-injection-safe" when supplied to this function (contrary to values in the arrays which may be insecure).
+        if (is_string($where)) {
+            if (is_array($fields_values) && count($fields_values)) {
+                // quote and escape values
                 $nArr = $this->fullQuoteArray($fields_values, $table, $no_quote_fields);
 
                 $fields = [];
@@ -82,7 +85,7 @@ abstract class Database extends \Flake\Core\FLObject {
                     $fields[] = $k . '=' . $v;
                 }
 
-                    // Build query:
+                // Build query:
                 $query = 'UPDATE ' . $table . '
 					SET
 						' . implode(',
@@ -91,8 +94,11 @@ abstract class Database extends \Flake\Core\FLObject {
 					WHERE
 						' . $where : '');
 
-                    // Return query:
-                if ($this->debugOutput || $this->store_lastBuiltQuery) $this->debug_lastBuiltQuery = $query;
+                // Return query:
+                if ($this->debugOutput || $this->store_lastBuiltQuery) {
+                    $this->debug_lastBuiltQuery = $query;
+                }
+
                 return $query;
             }
         } else {
@@ -105,15 +111,17 @@ abstract class Database extends \Flake\Core\FLObject {
     }
 
     function DELETEquery($table, $where) {
-        if (is_string($where))    {
-
-                // Table and fieldnames should be "SQL-injection-safe" when supplied to this function
+        if (is_string($where)) {
+            // Table and fieldnames should be "SQL-injection-safe" when supplied to this function
             $query = 'DELETE FROM ' . $table .
                 (strlen($where) > 0 ? '
 				WHERE
 					' . $where : '');
 
-            if ($this->debugOutput || $this->store_lastBuiltQuery) $this->debug_lastBuiltQuery = $query;
+            if ($this->debugOutput || $this->store_lastBuiltQuery) {
+                $this->debug_lastBuiltQuery = $query;
+            }
+
             return $query;
         } else {
             die('<strong>Fatal Error:</strong> "Where" clause argument for DELETE query was not a string in $this->DELETEquery() !');
@@ -125,33 +133,35 @@ abstract class Database extends \Flake\Core\FLObject {
     }
 
     function SELECTquery($select_fields, $from_table, $where_clause, $groupBy = '', $orderBy = '', $limit = '') {
-
-            // Table and fieldnames should be "SQL-injection-safe" when supplied to this function
-            // Build basic query:
+        // Table and fieldnames should be "SQL-injection-safe" when supplied to this function
+        // Build basic query:
         $query = 'SELECT ' . $select_fields . '
 			FROM ' . $from_table .
             (strlen($where_clause) > 0 ? '
 			WHERE
 				' . $where_clause : '');
 
-            // Group by:
-        if (strlen($groupBy) > 0)    {
+        // Group by:
+        if (strlen($groupBy) > 0) {
             $query .= '
 			GROUP BY ' . $groupBy;
         }
-            // Order by:
-        if (strlen($orderBy) > 0)    {
+        // Order by:
+        if (strlen($orderBy) > 0) {
             $query .= '
 			ORDER BY ' . $orderBy;
         }
-            // Group by:
-        if (strlen($limit) > 0)    {
+        // Group by:
+        if (strlen($limit) > 0) {
             $query .= '
 			LIMIT ' . $limit;
         }
 
-            // Return query:
-        if ($this->debugOutput || $this->store_lastBuiltQuery) $this->debug_lastBuiltQuery = $query;
+        // Return query:
+        if ($this->debugOutput || $this->store_lastBuiltQuery) {
+            $this->debug_lastBuiltQuery = $query;
+        }
+
         return $query;
     }
 
@@ -160,17 +170,18 @@ abstract class Database extends \Flake\Core\FLObject {
     }
 
     function fullQuoteArray($arr, $table, $noQuote = false) {
-        if (is_string($noQuote))    {
+        if (is_string($noQuote)) {
             $noQuote = explode(',', $noQuote);
-        } elseif (!is_array($noQuote))    {    // sanity check
+        } elseif (!is_array($noQuote)) {    // sanity check
             $noQuote = false;
         }
 
-        foreach ($arr as $k => $v)    {
-            if ($noQuote === false || !in_array($k, $noQuote))     {
+        foreach ($arr as $k => $v) {
+            if ($noQuote === false || !in_array($k, $noQuote)) {
                 $arr[$k] = $this->fullQuote($v, $table);
             }
         }
+
         return $arr;
     }
 

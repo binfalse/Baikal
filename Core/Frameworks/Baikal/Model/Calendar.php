@@ -1,4 +1,5 @@
 <?php
+
 #################################################################
 #  Copyright notice
 #
@@ -24,8 +25,9 @@
 #  This copyright notice MUST APPEAR in all copies of the script!
 #################################################################
 
-
 namespace Baikal\Model;
+
+use Symfony\Component\Yaml\Yaml;
 
 class Calendar extends \Flake\Core\Model\Db {
     const DATATABLE = "calendarinstances";
@@ -39,10 +41,20 @@ class Calendar extends \Flake\Core\Model\Db {
         "description"   => "",
         "calendarorder" => 0,
         "calendarcolor" => "",
-        "timezone"      => "",
+        "timezone"      => null,
         "calendarid"    => 0
     ];
     protected $oCalendar; # Baikal\Model\Calendar\Calendar
+
+    function __construct($sPrimary = false) {
+        parent::__construct($sPrimary);
+        try {
+            $config = Yaml::parseFile(PROJECT_PATH_CONFIG . "baikal.yaml");
+            $this->set("timezone", $config['system']["timezone"]);
+        } catch (\Exception $e) {
+            error_log('Error reading baikal.yaml file : ' . $e->getMessage());
+        }
+    }
 
     protected function initFloating() {
         parent::initFloating();
@@ -76,14 +88,13 @@ class Calendar extends \Flake\Core\Model\Db {
         $oBaseRequester = \Baikal\Model\Calendar\Event::getBaseRequester();
         $oBaseRequester->addClauseEquals(
             "calendarid",
-            $this->get("id")
+            $this->get("calendarid")
         );
 
         return $oBaseRequester;
     }
 
     function get($sPropName) {
-
         if ($sPropName === "components") {
             return $this->oCalendar->get($sPropName);
         }
@@ -114,13 +125,11 @@ class Calendar extends \Flake\Core\Model\Db {
     }
 
     function set($sPropName, $sValue) {
-
         if ($sPropName === "components") {
             return $this->oCalendar->set($sPropName, $sValue);
         }
 
         if ($sPropName === "todos") {
-
             if (($sComponents = $this->get("components")) !== "") {
                 $aComponents = explode(",", $sComponents);
             } else {
@@ -141,7 +150,6 @@ class Calendar extends \Flake\Core\Model\Db {
         }
 
         if ($sPropName === "notes") {
-
             if (($sComponents = $this->get("components")) !== "") {
                 $aComponents = explode(",", $sComponents);
             } else {
@@ -193,8 +201,8 @@ class Calendar extends \Flake\Core\Model\Db {
             "validation" => "color",
             "popover"    => [
                     "title"   => "Calendar color",
-                    "content" => "This is the color that will be displayed in your CalDAV client.</br>" .
-                    "Must be supplied in format '#RRGGBBAA' (alpha channel optional) with hexadecimal values.</br>" .
+                    "content" => "This is the color that will be displayed in your CalDAV client.<br/>" .
+                    "Must be supplied in format '#RRGGBBAA' (alpha channel optional) with hexadecimal values.<br/>" .
                     "This value is optional.",
             ]
         ]));
@@ -216,7 +224,6 @@ class Calendar extends \Flake\Core\Model\Db {
             "help"  => "If checked, notes will be enabled on this calendar.",
         ]));
 
-
         if ($this->floating()) {
             $oMorpho->element("uri")->setOption(
                 "help",
@@ -233,13 +240,34 @@ class Calendar extends \Flake\Core\Model\Db {
         return $this->get("uri") === "default";
     }
 
+    function hasInstances() {
+        $rSql = $GLOBALS["DB"]->exec_SELECTquery(
+            "count(*)",
+            "calendarinstances",
+            "calendarid" . "='" . $this->aData["calendarid"] . "'"
+        );
+
+        if (($aRs = $rSql->fetch()) === false) {
+            return false;
+        } else {
+            reset($aRs);
+
+            return $aRs["count(*)"] > 1;
+        }
+    }
+
     function destroy() {
-        $oEvents = $this->getEventsBaseRequester()->execute();
-        foreach ($oEvents as $event) {
-            $event->destroy();
+        $hasInstances = $this->hasInstances();
+        if (!$hasInstances) {
+            $oEvents = $this->getEventsBaseRequester()->execute();
+            foreach ($oEvents as $event) {
+                $event->destroy();
+            }
         }
 
         parent::destroy();
-        $this->oCalendar->destroy();
+        if (!$hasInstances) {
+            $this->oCalendar->destroy();
+        }
     }
 }

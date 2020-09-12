@@ -1,4 +1,5 @@
 <?php
+
 #################################################################
 #  Copyright notice
 #
@@ -24,7 +25,6 @@
 #  This copyright notice MUST APPEAR in all copies of the script!
 #################################################################
 
-
 namespace Flake\Core;
 
 class Collection extends \Flake\Core\FLObject implements \Iterator {
@@ -49,6 +49,7 @@ class Collection extends \Flake\Core\FLObject implements \Iterator {
 
     function valid() {
         $key = key($this->aCollection);
+
         return ($key !== null && $key !== false);
     }
 
@@ -59,11 +60,13 @@ class Collection extends \Flake\Core\FLObject implements \Iterator {
         }
 
         $oRes = $this->aCollection[$sKey];
+
         return $oRes;
     }
 
     function &each() {
         list($key, $val) = each($this->aCollection);
+
         return $val;
     }
 
@@ -107,20 +110,24 @@ class Collection extends \Flake\Core\FLObject implements \Iterator {
     function &first() {
         if (!$this->isEmpty()) {
             $aKeys = $this->keys();
+
             return $this->aCollection[array_shift($aKeys)];
         }
 
         $var = null;    # two lines instead of one
+
         return $var;    # as PHP needs a variable to return by ref
     }
 
     function &last() {
         if (!$this->isEmpty()) {
             $aKeys = $this->keys();
+
             return $this->aCollection[array_pop($aKeys)];
         }
 
         $var = null;
+
         return $var;
     }
 
@@ -142,18 +149,21 @@ class Collection extends \Flake\Core\FLObject implements \Iterator {
     # This abstraction is useful because of CollectionTyped
     protected function newCollectionLikeThisOne() {
         $oCollection = new \Flake\Core\Collection();    # two lines instead of one
+
         return $oCollection;                            # as PHP needs a variable to return by ref
     }
 
     function map($sFunc) {
         $aData = $this->toArray();
         $oNewColl = $this->fromArray(array_map($sFunc, $aData));
+
         return $oNewColl;
     }
 
     function walk($sFunc, $aParams = []) {
         $aData = $this->toArray();
         $oNewColl = $this->fromArray(array_walk($aData, $sFunc, $aParams));
+
         return $oNewColl;
     }
 
@@ -170,37 +180,37 @@ class Collection extends \Flake\Core\FLObject implements \Iterator {
     function &__call($sName, $aArguments) {
         if (
             strlen($sName) > 7 &&
-            $sName{0} === "s" &&
-            $sName{1} === "e" &&
-            $sName{2} === "t" &&
-            $sName{3} === "M" &&
-            $sName{4} === "e" &&
-            $sName{5} === "t" &&
-            $sName{6} === "a"
+            $sName[0] === "s" &&
+            $sName[1] === "e" &&
+            $sName[2] === "t" &&
+            $sName[3] === "M" &&
+            $sName[4] === "e" &&
+            $sName[5] === "t" &&
+            $sName[6] === "a"
         ) {
             $sKey = strtolower(substr($sName, 7, 1)) . substr($sName, 8);
-            $mValue = & $aArguments[0];
+            $mValue = &$aArguments[0];
 
             if (is_null($mValue)) {
                 if (array_key_exists($sKey, $this->aMeta)) {
                     unset($this->aMeta[$sKey]);
                 }
             } else {
-                $this->aMeta[$sKey] = & $mValue;
+                $this->aMeta[$sKey] = &$mValue;
             }
 
             $res = null;
-            return $res;    # To avoid 'Notice: Only variable references should be returned by reference'
 
+            return $res;    # To avoid 'Notice: Only variable references should be returned by reference'
         } elseif (
             strlen($sName) > 7 &&
-            $sName{0} === "g" &&
-            $sName{1} === "e" &&
-            $sName{2} === "t" &&
-            $sName{3} === "M" &&
-            $sName{4} === "e" &&
-            $sName{5} === "t" &&
-            $sName{6} === "a"
+            $sName[0] === "g" &&
+            $sName[1] === "e" &&
+            $sName[2] === "t" &&
+            $sName[3] === "M" &&
+            $sName[4] === "e" &&
+            $sName[5] === "t" &&
+            $sName[6] === "a"
         ) {
             $sKey = strtolower(substr($sName, 7, 1)) . substr($sName, 8);
             if (array_key_exists($sKey, $this->aMeta)) {

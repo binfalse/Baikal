@@ -1,4 +1,5 @@
 <?php
+
 #################################################################
 #  Copyright notice
 #
@@ -24,12 +25,13 @@
 #  This copyright notice MUST APPEAR in all copies of the script!
 #################################################################
 
-
 namespace Flake\Core\Datastructure;
 
+/**
+ * @extends \SplDoublyLinkedList<\Flake\Core\Datastructure\Chainable>
+ */
 class Chain extends \SplDoublyLinkedList {
-
-    function push(\Flake\Core\Datastructure\Chainable $value) {
+    function push($value) {
         $value->chain($this, $this->count());
         parent::push($value);
     }
@@ -40,11 +42,13 @@ class Chain extends \SplDoublyLinkedList {
 
     function &first() {
         $oRes = $this->bottom();
+
         return $oRes;
     }
 
     function &last() {
         $oRes = $this->top();
+
         return $oRes;
     }
 

@@ -1,4 +1,5 @@
 <?php
+
 #################################################################
 #  Copyright notice
 #
@@ -24,15 +25,18 @@
 #  This copyright notice MUST APPEAR in all copies of the script!
 #################################################################
 
-
 namespace Flake\Controller;
 
 class Page extends \Flake\Core\Render\Container {
-
     protected $sTitle = "";
     protected $sMetaKeywords = "";
     protected $sMetaDescription = "";
     protected $sTemplatePath = "";
+
+    /**
+     * @var string
+     */
+    private $sBaseUrl;
 
     function __construct($sTemplatePath) {
         $this->sTemplatePath = $sTemplatePath;
@@ -57,6 +61,7 @@ class Page extends \Flake\Core\Render\Container {
     function getMetaKeywords() {
         $sString = str_replace(["le", "la", "les", "de", "des", "un", "une"], " ", $this->sMetaKeywords);
         $sString = \Flake\Util\Tools::stringToUrlToken($sString);
+
         return implode(", ", explode("-", $sString));
     }
 
@@ -97,7 +102,6 @@ class Page extends \Flake\Core\Render\Container {
     }
 
     function addCss($sCssAbsPath) {
-
         if (\Flake\Util\Frameworks::enabled("LessPHP")) {
             $sCompiledPath = PATH_buildcss;
             $sFileName = basename($sCssAbsPath);
