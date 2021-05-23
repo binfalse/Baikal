@@ -39,7 +39,7 @@ class Initialize extends \Flake\Core\Controller {
             $message = "<h1>Error - Insufficient  permissions on the configuration folders</h1><p>";
             $message .= "<p>In order to work properly, Baïkal needs to have write permissions in the <strong>Specific/</strong> and <strong>config/</strong> folder.</p>";
 
-            die($message);
+            exit($message);
         }
 
         $this->createHtaccessFilesIfNeeded();
@@ -54,6 +54,10 @@ class Initialize extends \Flake\Core\Controller {
             $this->oModel->set('cal_enabled', BAIKAL_CAL_ENABLED);
             $this->oModel->set('invite_from', defined("BAIKAL_INVITE_FROM") ? BAIKAL_INVITE_FROM : "");
             $this->oModel->set('dav_auth_type', BAIKAL_DAV_AUTH_TYPE);
+        }
+        if (file_exists(PROJECT_PATH_SPECIFIC . "config.system.php")) {
+            require_once PROJECT_PATH_SPECIFIC . "config.system.php";
+            $this->oModel->set('auth_realm', BAIKAL_AUTH_REALM);
         }
 
         $this->oForm = $this->oModel->formForThisModelInstance([
@@ -73,16 +77,16 @@ class Initialize extends \Flake\Core\Controller {
                 }
 
                 # Creating system config, and initializing BAIKAL_ENCRYPTION_KEY
-                $oSystemConfig = new \Baikal\Model\Config\System();
-                $oSystemConfig->set("encryption_key", md5(microtime() . rand()));
+                $oDatabaseConfig = new \Baikal\Model\Config\Database();
+                $oDatabaseConfig->set("encryption_key", md5(microtime() . rand()));
 
                 # Default: PDO::SQLite or PDO::MySQL ?
                 $aPDODrivers = \PDO::getAvailableDrivers();
                 if (!in_array('sqlite', $aPDODrivers)) {    # PDO::MySQL is already asserted in \Baikal\Core\Tools::assertEnvironmentIsOk()
-                    $oSystemConfig->set("mysql", true);
+                    $oDatabaseConfig->set("mysql", true);
                 }
 
-                $oSystemConfig->persist();
+                $oDatabaseConfig->persist();
             }
         }
     }
