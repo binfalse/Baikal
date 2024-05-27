@@ -66,7 +66,7 @@ class Text extends \Formal\Element {
             $placeholder = " placeholder=\"" . htmlspecialchars($sPlaceHolder) . "\" ";
         }
 
-        $clientvalue = htmlspecialchars($value);
+        $clientvalue = htmlspecialchars($value ?? '');
 
         $sInputType = $this->inputtype();
 
@@ -84,6 +84,7 @@ class Text extends \Formal\Element {
 
             $popover = " title=\"" . htmlspecialchars($aPopover["title"]) . "\" ";
             $popover .= " data-content=\"" . htmlspecialchars($aPopover["content"]) . "\" ";
+            $popover .= " data-html=\"true\"";
         }
 
         $sHtml = <<<HTML

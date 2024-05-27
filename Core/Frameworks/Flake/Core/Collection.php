@@ -31,23 +31,25 @@ class Collection extends \Flake\Core\FLObject implements \Iterator {
     protected $aCollection = [];
     protected $aMeta = [];
 
+    #[\ReturnTypeWillChange]
     function current() {
         return current($this->aCollection);
     }
 
+    #[\ReturnTypeWillChange]
     function key() {
         return key($this->aCollection);
     }
 
-    function next() {
-        return next($this->aCollection);
+    function next(): void {
+        next($this->aCollection);
     }
 
-    function rewind() {
+    function rewind(): void {
         $this->reset();
     }
 
-    function valid() {
+    function valid(): bool {
         $key = key($this->aCollection);
 
         return ($key !== null && $key !== false);
@@ -173,14 +175,14 @@ class Collection extends \Flake\Core\FLObject implements \Iterator {
 
     function &__call($sName, $aArguments) {
         if (
-            strlen($sName) > 7 &&
-            $sName[0] === "s" &&
-            $sName[1] === "e" &&
-            $sName[2] === "t" &&
-            $sName[3] === "M" &&
-            $sName[4] === "e" &&
-            $sName[5] === "t" &&
-            $sName[6] === "a"
+            strlen($sName) > 7
+            && $sName[0] === "s"
+            && $sName[1] === "e"
+            && $sName[2] === "t"
+            && $sName[3] === "M"
+            && $sName[4] === "e"
+            && $sName[5] === "t"
+            && $sName[6] === "a"
         ) {
             $sKey = strtolower(substr($sName, 7, 1)) . substr($sName, 8);
             $mValue = &$aArguments[0];
@@ -197,14 +199,14 @@ class Collection extends \Flake\Core\FLObject implements \Iterator {
 
             return $res;    # To avoid 'Notice: Only variable references should be returned by reference'
         } elseif (
-            strlen($sName) > 7 &&
-            $sName[0] === "g" &&
-            $sName[1] === "e" &&
-            $sName[2] === "t" &&
-            $sName[3] === "M" &&
-            $sName[4] === "e" &&
-            $sName[5] === "t" &&
-            $sName[6] === "a"
+            strlen($sName) > 7
+            && $sName[0] === "g"
+            && $sName[1] === "e"
+            && $sName[2] === "t"
+            && $sName[3] === "M"
+            && $sName[4] === "e"
+            && $sName[5] === "t"
+            && $sName[6] === "a"
         ) {
             $sKey = strtolower(substr($sName, 7, 1)) . substr($sName, 8);
             if (array_key_exists($sKey, $this->aMeta)) {

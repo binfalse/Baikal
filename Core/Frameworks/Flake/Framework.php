@@ -184,7 +184,9 @@ class Framework extends \Flake\Core\Framework {
 
         if (!\Flake\Util\Tools::isCliPhp()) {
             ini_set("html_errors", true);
-            session_start();
+            if (session_status() === PHP_SESSION_NONE) {
+                session_start();
+            }
             if (!isset($_SESSION['CSRF_TOKEN'])) {
                 $_SESSION['CSRF_TOKEN'] = bin2hex(openssl_random_pseudo_bytes(20));
             }
@@ -209,7 +211,7 @@ class Framework extends \Flake\Core\Framework {
             if (isset($config["system"]["base_uri"]) && $config["system"]["base_uri"] !== "") {
                 // SabreDAV needs a "/" at the beginning of BASEURL
                 define("PROJECT_BASEURI",
-                        self::prependSlash(self::appendSlash($config["system"]["base_uri"])));
+                    self::prependSlash(self::appendSlash($config["system"]["base_uri"])));
                 define("PROJECT_URI", \Flake\Util\Tools::getCurrentProtocol() . "://"
                     . $_SERVER["HTTP_HOST"] . PROJECT_BASEURI);
 
@@ -233,7 +235,7 @@ class Framework extends \Flake\Core\Framework {
 
         # Determine PROJECT_URI
         $sProtocol = \Flake\Util\Tools::getCurrentProtocol();
-        $sHttpBaseUrl = strtolower($_SERVER["REQUEST_URI"]);
+        $sHttpBaseUrl = $_SERVER["REQUEST_URI"];
         $sHttpBaseUrl = self::rmQuery($sHttpBaseUrl);
         $sHttpBaseUrl = self::rmScriptName($sHttpBaseUrl, $sScript);
         $sHttpBaseUrl = self::rmProjectContext($sHttpBaseUrl);

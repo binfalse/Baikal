@@ -61,7 +61,7 @@ class Initialize extends \Flake\Core\Controller {
         }
 
         $this->oForm = $this->oModel->formForThisModelInstance([
-            "close" => false
+            "close" => false,
         ]);
 
         if ($this->oForm->submitted()) {
@@ -108,7 +108,7 @@ class Initialize extends \Flake\Core\Controller {
             exit(0);
 
         #$sMessage = "<p>Baïkal is now configured. You may <a class='btn btn-success' href='" . PROJECT_URI . "admin/'>Access the Baïkal admin</a></p>";
-            #$sForm = "";
+        #$sForm = "";
         } else {
             $sMessage = "";
             $sForm = $this->oForm->render();

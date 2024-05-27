@@ -38,15 +38,15 @@ class Form {
         "hook.validation" => false,
         "hook.morphology" => false,
     ];
-    protected $oModelInstance = null;
-    protected $oElements = null;
+    protected $oModelInstance;
+    protected $oElements;
     protected $aErrors = [];
-    protected $bPersisted = null;        # TRUE when form has persisted; available only after execute
+    protected $bPersisted;        # TRUE when form has persisted; available only after execute
 
     protected $sDisplayTitle = "";        # Displayed form title; generated in setModelInstance()
     protected $sDisplayMessage = "";    # Displayed confirm message; generated in execute()
 
-    protected $oMorpho = null;
+    protected $oMorpho;
 
     function __construct($sModelClass, $aOptions = []) {
         $this->sModelClass = $sModelClass;
@@ -400,7 +400,7 @@ class Form {
         $sActionUrl = $this->option("action");
 
         $sHtml = <<<HTML
-<form class="form-horizontal" action="{$sActionUrl}" method="post" enctype="multipart/formdata">
+<form class="form-horizontal" action="{$sActionUrl}" method="post" enctype="multipart/form-data">
     <input type="hidden" name="{$sSubmittedFlagName}" value="1" />
     <input type="hidden" name="refreshed" value="0" />
     <input type="hidden" name="CSRF_TOKEN" value="{$csrfToken}" />

@@ -387,7 +387,7 @@ function generateSprite($aSymbols, $iCols, $iRows, $iPngWidth, $iPngHeight, $sCl
             "x"      => round($iX),
             "y"      => round($iY),
             "width"  => ceil($iSymbolWidth),
-            "height" => ceil($iSymbolHeight)
+            "height" => ceil($iSymbolHeight),
         ];
 
         ++$iKey;
@@ -456,7 +456,7 @@ CSS;
 CSS;
     }
 
-    $sCss = "\n" . "/* " . count($aSprites) . " glyphs, generated on " . strftime("%Y-%m-%d %H:%M:%S") . "; C=" . $iCols . "; R=" . $iRows . "; W=" . $iPngWidth . "; H=" . $iPngHeight . "; PREFIX=" . $sClassPrefix . " */\n" . $sCss;
+    $sCss = "\n/* " . count($aSprites) . " glyphs, generated on " . strftime("%Y-%m-%d %H:%M:%S") . "; C=" . $iCols . "; R=" . $iRows . "; W=" . $iPngWidth . "; H=" . $iPngHeight . "; PREFIX=" . $sClassPrefix . " */\n" . $sCss;
 
     return $sCss;
 }

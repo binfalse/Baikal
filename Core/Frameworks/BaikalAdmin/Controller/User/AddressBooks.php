@@ -63,7 +63,6 @@ class AddressBooks extends \Flake\Core\Controller {
         $aAddressBooks = [];
         $oAddressBooks = $this->oUser->getAddressBooksBaseRequester()->execute();
 
-        reset($oAddressBooks);
         foreach ($oAddressBooks as $addressbook) {
             $aAddressBooks[] = [
                 "linkedit"    => $this->linkEdit($addressbook),
@@ -102,7 +101,7 @@ class AddressBooks extends \Flake\Core\Controller {
     protected function initForm() {
         if ($this->actionEditRequested() || $this->actionNewRequested()) {
             $aOptions = [
-                "closeurl" => $this->linkHome()
+                "closeurl" => $this->linkHome(),
             ];
 
             $this->oForm = $this->oModel->formForThisModelInstance($aOptions);
@@ -123,7 +122,7 @@ class AddressBooks extends \Flake\Core\Controller {
     function linkNew() {
         return self::buildRoute([
             "user" => $this->currentUserId(),
-            "new"  => 1
+            "new"  => 1,
         ]) . "#form";
     }
 
@@ -165,7 +164,7 @@ class AddressBooks extends \Flake\Core\Controller {
     function linkEdit(\Baikal\Model\AddressBook $oModel) {
         return self::buildRoute([
             "user" => $this->currentUserId(),
-            "edit" => $oModel->get("id")
+            "edit" => $oModel->get("id"),
         ]) . "#form";
     }
 
@@ -197,7 +196,7 @@ class AddressBooks extends \Flake\Core\Controller {
     function linkDelete(\Baikal\Model\AddressBook $oModel) {
         return self::buildRoute([
             "user"   => $this->currentUserId(),
-            "delete" => $oModel->get("id")
+            "delete" => $oModel->get("id"),
         ]) . "#message";
     }
 
@@ -205,7 +204,7 @@ class AddressBooks extends \Flake\Core\Controller {
         return self::buildRoute([
             "user"    => $this->currentUserId(),
             "delete"  => $oModel->get("id"),
-            "confirm" => 1
+            "confirm" => 1,
         ]) . "#message";
     }
 

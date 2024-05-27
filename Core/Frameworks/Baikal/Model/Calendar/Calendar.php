@@ -33,14 +33,14 @@ class Calendar extends \Flake\Core\Model\Db {
     const LABELFIELD = "components";
 
     protected $aData = [
-        "components" => ""
+        "components" => "",
     ];
 
     function hasInstances() {
         $rSql = $GLOBALS["DB"]->exec_SELECTquery(
             "count(*)",
             "calendarinstances",
-            "calendarid" . "='" . $this->aData["id"] . "'"
+            "calendarid='" . $this->aData["id"] . "'"
         );
 
         if (($aRs = $rSql->fetch()) === false) {
