@@ -1,4 +1,4 @@
-FROM php:7.2-apache
+FROM php:8-apache
 MAINTAINER martin scharm <https://binfalse.de/contact>
 
 # we're working from /var/www, not /var/www/html
@@ -24,7 +24,7 @@ RUN apt-get update \
 
 # install php db extensions
 RUN docker-php-source extract \
- && docker-php-ext-configure gd --with-freetype-dir=/usr/include/ --with-jpeg-dir=/usr/include/ \
+ && docker-php-ext-configure gd --with-freetype=/usr/include/ --with-jpeg=/usr/include/ \
  && docker-php-ext-install -j$(nproc) pdo pdo_mysql \
  && docker-php-source delete
 
