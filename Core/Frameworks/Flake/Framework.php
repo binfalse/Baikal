@@ -163,10 +163,24 @@ class Framework extends \Flake\Core\Framework {
 
         define("PROJECT_PATH_CORE", PROJECT_PATH_ROOT . "Core/");
         define("PROJECT_PATH_CORERESOURCES", PROJECT_PATH_CORE . "Resources/");
-        define("PROJECT_PATH_SPECIFIC", PROJECT_PATH_ROOT . "Specific/");
-        define("PROJECT_PATH_CONFIG", PROJECT_PATH_ROOT . "config/");
         define("PROJECT_PATH_FRAMEWORKS", PROJECT_PATH_CORE . "Frameworks/");
         define("PROJECT_PATH_WWWROOT", PROJECT_PATH_CORE . "WWWRoot/");
+
+        // set PROJECT_PATH_CONFIG from BAIKAL_PATH_CONFIG
+        $baikalPathConfig = getenv('BAIKAL_PATH_CONFIG');
+        if ($baikalPathConfig !== false) {
+            define("PROJECT_PATH_CONFIG", $baikalPathConfig);
+        } else {
+            define("PROJECT_PATH_CONFIG", PROJECT_PATH_ROOT . "config/");
+        }
+
+        // set PROJECT_PATH_SPECIFIC from BAIKAL_PATH_CONFIG
+        $baikalPathConfig = getenv('BAIKAL_PATH_SPECIFIC');
+        if ($baikalPathConfig !== false) {
+            define("PROJECT_PATH_SPECIFIC", $baikalPathConfig);
+        } else {
+            define("PROJECT_PATH_SPECIFIC", PROJECT_PATH_ROOT . "Specific/");
+        }
 
         require_once PROJECT_PATH_CORE . "Distrib.php";
 
@@ -259,8 +273,12 @@ class Framework extends \Flake\Core\Framework {
         if (defined("BAIKAL_CONTEXT_INSTALL") && (!isset($config['system']['configured_version']) || $config['system']['configured_version'] === BAIKAL_VERSION)) {
             return true;
         }
-        if ($config['database']['mysql'] === true) {
+        # Config key 'mysql' kept for backwards compatibility
+        $legacyMysql = key_exists('mysql', $config['database']) && $config['database']['mysql'] === true;
+        if ($legacyMysql || (key_exists('backend', $config['database']) && $config['database']['backend'] === 'mysql')) {
             self::initDbMysql($config);
+        } elseif (key_exists('backend', $config['database']) && $config['database']['backend'] === 'pgsql') {
+            self::initDbPgsql($config);
         } else {
             self::initDbSqlite($config);
         }
@@ -323,6 +341,38 @@ class Framework extends \Flake\Core\Framework {
         }
 
         return true;
+    }
+
+    protected static function initDbPgsql(array $config) {
+        if (!$config['database']['pgsql_host']) {
+            exit("<h3>The constant PROJECT_DB_PGSQL_HOST, containing the PostgreSQL host name, is not set.<br />You should set it in config/baikal.yaml</h3>");
+        }
+
+        if (!$config['database']['pgsql_dbname']) {
+            exit("<h3>The constant PROJECT_DB_PGSQL_DBNAME, containing the PostgreSQL database name, is not set.<br />You should set it in config/baikal.yaml</h3>");
+        }
+
+        try {
+            $GLOBALS["DB"] = new \Flake\Core\Database\Pgsql(
+                $config['database']['pgsql_host'],
+                $config['database']['pgsql_dbname'],
+                $config['database']['pgsql_username'],
+                $config['database']['pgsql_password']
+            );
+
+            $GLOBALS["DB"]->query("SET NAMES 'UTF8'");
+        } catch (\Exception $e) {
+            $message = "Baïkal was not able to establish a connection to the configured PostgreSQL database (as configured in config/baikal.yaml).";
+            if (!$config['database']['pgsql_username']) {
+                exit("<h3>$message Note: The constant PROJECT_DB_PGSQL_USERNAME, containing the PostgreSQL database username, is not set. If your database requires a username you should set it in config/baikal.yaml.</h3>");
+            }
+
+            if ($config['database']['pgsql_password'] === null) {
+                exit("<h3>$message Note: The constant PROJECT_DB_PGSQL_PASSWORD, containing the PostgreSQL database password, is not set. If your database requires a password you should set it in config/baikal.yaml.</h3>");
+            }
+
+            exit("<h3>$message</h3>");
+        }
     }
 
     static function isDBInitialized() {
